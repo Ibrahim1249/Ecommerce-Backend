@@ -43,6 +43,9 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    refreshToken: {
+        type: String
+    },
     wishlist: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -57,7 +60,7 @@ const userSchema = new mongoose.Schema(
 );
 
  userSchema.pre("save" , async function (next) {
-    // this meant we are saving password for first time if password is already modify means we dont need to hash that password 
+    // this meant we are saving password for first time if password is already modify means we don't need to hash that password 
     if(!this.isModified("password")) return next();
      
     // convert plain text password to hash 
