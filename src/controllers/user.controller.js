@@ -162,7 +162,7 @@ async function handleRefreshToken(req,res) {
         }
 
         const {accessToken , refreshToken} = generateAccessAndRefreshToken(user._id);
-        return res.status(200).cookie("accessToken" ,accessToken , options).cookie("refreshToken",refreshToken , options).json({message : "user successfully logged In " , user: loggedInUser, accessToken, refreshToken} )
+        return res.status(200).cookie("accessToken" ,accessToken , options).cookie("refreshToken",refreshToken , options).json({message : "user successfully logged In " , user, accessToken, refreshToken} )
 
     } catch (error) {
         console.log("error in get wishlist controller " , error);

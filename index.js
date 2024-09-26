@@ -3,6 +3,7 @@ const { mongodbConnect } = require("./src/db");
 const { userRouter } = require("./src/routes/user.router");
 const dotenv = require("dotenv");
 const cookieParser = require("cookie-parser");
+const { productRouter } = require("./src/routes/product.router");
 dotenv.config();
 
 const app = express();
@@ -20,4 +21,5 @@ mongodbConnect().then(()=>{
 }).catch((error)=>{console.log(error)})
 
 
-app.use("/api/v1",userRouter)
+app.use("/api/v1/user",userRouter);
+app.use("/api/v1/product",productRouter);
