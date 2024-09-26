@@ -1,16 +1,17 @@
-const jwt = require("jsonwebtoken")
+const jwt = require("jsonwebtoken");
+const { userModel } = require("../models/user.model");
 
 
 async function verifyJwt(req,res,next){
     try{
        const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ","");
-       console.log(token)
+    //    console.log(token)
 
        if(!token) return res.status(401).json({error : "Unauthorized request"});
 
        const decoded = jwt.verify(token , process.env.ACCESS_TOKEN_SECRET);
 
-       const user = await findById(decoded?._id).select("-password -refreshToken");
+       const user = await userModel.findById(decoded?._id).select("-password -refreshToken");
 
        if(!user) return res.status(401).json({error : "Invalid Access Token"});
 

@@ -76,10 +76,33 @@ async function handleLoginUser(req, res) {
 }
 
 
+async function handleLogoutUser(req,res) {
+    try {
+        await userModel.findByIdAndUpdate(req.user._id , 
+            {
+               $unset : {
+                  refreshToken : 1 // remove the value refresh token from current user 
+               }
+            }, 
+            {new : true}
+        )
+
+        const options = {
+            httpOnly : true,
+            secure:true
+        }
+        return res.status(200).clearCookie("accessToken" , options).clearCookie('refreshToken' , options).json({message : "user is logout successfully"})
+    } catch (error) {
+        console.log("error in logout controller " , error);
+        return res.status(500).json({error : error.message})
+    }
+}
+
 
 
 
 module.exports = {
     handleRegisterUser,
-    handleLoginUser
+    handleLoginUser,
+    handleLogoutUser
 }
