@@ -75,7 +75,6 @@ async function handleLoginUser(req, res) {
     }
 }
 
-
 async function handleLogoutUser(req,res) {
     try {
         await userModel.findByIdAndUpdate(req.user._id , 
@@ -98,11 +97,60 @@ async function handleLogoutUser(req,res) {
     }
 }
 
+async function changePassword(req,res) {
+    try {
+        const {oldPassword , newPassword} = req.body;
+        const user = await userModel.findById(req.user._id);
+        const isPassword = await user.isPasswordCorrect(oldPassword);
+        if(!isPassword) return res.status(400).json({error : "invalid old password"})
+
+        user.password = newPassword;
+        await user.save({validateBeforeSave : false});
+
+        res.status(201).json({message : "password is change successfully "})
+    } catch (error) {
+        console.log("error in change password controller " , error);
+        return res.status(500).json({error : error.message})
+    }
+}
+
+async function handleAddWishlist(req,res) {
+    try {
+        const {productId} = req.body;
+        const updatedWishlist = await userModel.findByIdAndUpdate(req.user._id , {
+             $push :{
+                 wishlist : productId
+             }
+        },{new : true})
+
+        // console.log(updatedWishlist)
+        return res.json({message : "product add in wishlist" , updatedWishlist })
+
+    } catch (error) {
+        console.log("error in add wishlist controller " , error);
+        return res.status(500).json({error : error.message})
+    }
+}
+async function handleGetWishlist(req,res) {
+    try {
+        const updatedWishlist = await userModel.findById(req.user._id).populate("wishlist" , "title price description brand");
+        if(!updatedWishlist)return res.status(404).json({message : `No Wishlist for user ${req.user._id}`})
+
+        return res.json({message : `Wishlist for user ${req.user._id}` , updatedWishlist })
+
+    } catch (error) {
+        console.log("error in get wishlist controller " , error);
+        return res.status(500).json({error : error.message})
+    }
+}
 
 
 
 module.exports = {
     handleRegisterUser,
     handleLoginUser,
-    handleLogoutUser
+    handleLogoutUser,
+    handleGetWishlist,
+    handleAddWishlist,
+    changePassword
 }

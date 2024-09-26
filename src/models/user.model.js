@@ -8,15 +8,15 @@ const addressSchema = new mongoose.Schema({
   },
   city: {
     type: String,
-    trim : true
+    trim: true
   },
   state: {
     type: String,
-    trim : true
+    trim: true
   },
-  pincode : {
+  pincode: {
     type: String,
-    trim : true
+    trim: true
   },
 });
 
@@ -44,7 +44,7 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
     refreshToken: {
-        type: String
+      type: String
     },
     wishlist: [
       {
@@ -53,11 +53,13 @@ const userSchema = new mongoose.Schema(
       },
     ],
     address: {
-      type: addressSchema,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "address",
     },
   },
   { timestamps: true }
 );
+
 
  userSchema.pre("save" , async function (next) {
     // this meant we are saving password for first time if password is already modify means we don't need to hash that password 
@@ -101,5 +103,6 @@ const userSchema = new mongoose.Schema(
 
 
 const userModel = mongoose.model("user", userSchema);
+const addressModel = mongoose.model('address', addressSchema);
 
-module.exports = { userModel };
+module.exports = { userModel  , addressModel};
