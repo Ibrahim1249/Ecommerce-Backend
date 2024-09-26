@@ -1,4 +1,5 @@
 const { userModel } = require("../models/user.model")
+const jwt = require("jsonwebtoken");
 
 async function generateAccessAndRefreshToken(userId) {
     try {
@@ -144,6 +145,31 @@ async function handleGetWishlist(req,res) {
     }
 }
 
+async function handleRefreshToken(req,res) {
+    try {
+        const inComingToken = req.cookie.refreshToken || req.body.refreshToken;
+        if(!inComingToken) return res.status(401).json({error : "unauthorized request"});
+
+        const decodedRefreshToken  = jwt.verify(inComingToken , process.env.REFRESH_TOKEN_SECRET);
+        const user = await userModel.findById(decodedRefreshToken?._id);
+        if(!user) return res.status(401).json({error : "invalid refresh token "});
+
+        if(inComingToken !== user?.refreshToken) return res.status(401).json({error : "Refresh token is expired or used"});
+
+        const options = {
+            httpOnly : true,
+            secure : true
+        }
+
+        const {accessToken , refreshToken} = generateAccessAndRefreshToken(user._id);
+        return res.status(200).cookie("accessToken" ,accessToken , options).cookie("refreshToken",refreshToken , options).json({message : "user successfully logged In " , user: loggedInUser, accessToken, refreshToken} )
+
+    } catch (error) {
+        console.log("error in get wishlist controller " , error);
+        return res.status(500).json({error : error.message})
+    }
+}
+
 
 
 module.exports = {
@@ -152,5 +178,6 @@ module.exports = {
     handleLogoutUser,
     handleGetWishlist,
     handleAddWishlist,
-    changePassword
+    changePassword,
+    handleRefreshToken
 }
