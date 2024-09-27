@@ -1,5 +1,3 @@
-
-
 const mongoose = require("mongoose");
 
 const reviewSchema = new mongoose.Schema({
@@ -19,7 +17,6 @@ const reviewSchema = new mongoose.Schema({
          type : []
      }
 })
-
 const productSchema = new mongoose.Schema({
     productName : {
         type : String,
@@ -34,6 +31,9 @@ const productSchema = new mongoose.Schema({
         type : String,
         required : true
     },
+    description : {
+        type: String
+     },
     category : {
         type : String,
         required : true
@@ -49,8 +49,5 @@ const productSchema = new mongoose.Schema({
         type : [reviewSchema]
     }
 })
-
-
 const productModel = mongoose.model("product",productSchema);
-
 module.exports = {productModel}

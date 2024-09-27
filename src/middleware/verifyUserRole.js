@@ -1,6 +1,5 @@
 const { userModel } = require("../models/user.model");
 
-
 async function verifyUserRole(req, res,next){
      const user = await userModel.findById(req.user._id);
      if(user.role !== "admin") {
