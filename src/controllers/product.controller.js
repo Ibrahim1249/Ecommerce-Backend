@@ -86,7 +86,7 @@ async function handleUpdateProduct(req, res) {
           return updatedURL;
         })
       );
-      // filter out any failed upload to cloudinary
+      // filter out any failed upload to Cloudinary
       const validUpdatedProductURLs = result.filter((url) => url !== null);
       if (validUpdatedProductURLs.length === 0) {
         return res.status(500).json({ error: "Failed to upload the updated product images" })
@@ -108,4 +108,31 @@ async function handleUpdateProduct(req, res) {
   }
 }
 
-module.exports = { handleCreateProduct, handleUpdateProduct };
+async function handleDeleteProduct(req,res) {
+   try {
+      const {id} = req.params;
+      const deletedProduct = await productModel.findByIdAndDelete(id);
+      if (!deletedProduct) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      return res.json({message : `product is deleted successfully ${id}`})
+   } catch (error) {
+    console.log("Error in delete product controller", error);
+    return res.status(500).json({ error: error.message });
+   }
+}
+
+async function handleGetAllProduct(req,res) {
+  try {
+    const allProduct = await productModel.find({});
+    if (!allProduct) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+    return res.json({productDetails : allProduct})
+ } catch (error) {
+  console.log("Error in get all product controller", error);
+  return res.status(500).json({ error: error.message });
+ }
+}
+
+module.exports = { handleCreateProduct, handleUpdateProduct , handleDeleteProduct , handleGetAllProduct };
