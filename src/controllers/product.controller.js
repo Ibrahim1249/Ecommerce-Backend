@@ -1,4 +1,7 @@
-const { uploadToCloudinary, deleteFromCloudinary } = require("../middleware/cloudinary.middleware");
+const {
+  uploadToCloudinary,
+  deleteFromCloudinary,
+} = require("../middleware/cloudinary.middleware");
 const { productModel } = require("../models/product.model");
 
 async function handleCreateProduct(req, res) {
@@ -71,33 +74,37 @@ async function handleUpdateProduct(req, res) {
     const { id } = req.params;
     let updatedData = { ...req.body };
 
-       // Find the existing product first
-       const existingProduct = await productModel.findById(id);
-       if (!existingProduct) {
-         return res.status(404).json({ error: "Product not found" });
-       }
-   
-       let allProductImages = [...existingProduct.productImage];
+    // Find the existing product first
+    const existingProduct = await productModel.findById(id);
+    if (!existingProduct) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    let allProductImages = [...existingProduct.productImage];
 
     if (req.files) {
+      // Upload all images to Cloudinary
       const result = await Promise.all(
         req.files.map(async (file) => {
           const updatedURL = await uploadToCloudinary(file.path);
           return updatedURL;
         })
       );
+
       // filter out any failed upload to Cloudinary
       const validUpdatedProductURLs = result.filter((url) => url !== null);
       if (validUpdatedProductURLs.length === 0) {
-        return res.status(500).json({ error: "Failed to upload the updated product images" })
-      };
-       allProductImages = [...allProductImages, ...validUpdatedProductURLs];
+        return res
+          .status(500)
+          .json({ error: "Failed to upload the updated product images" });
+      }
+      allProductImages = [...allProductImages, ...validUpdatedProductURLs];
     }
-    updatedData.productImage = allProductImages
+    updatedData.productImage = allProductImages;
     const updatedProduct = await productModel.findByIdAndUpdate(
       id,
       {
-        $set : updatedData,
+        $set: updatedData,
       },
       { new: true }
     );
@@ -108,42 +115,50 @@ async function handleUpdateProduct(req, res) {
   }
 }
 
-async function handleDeleteProduct(req,res) {
-   try {
-      const {id} = req.params;
-       const fetchProductToDelete = await productModel.findById(id);
-       if (!fetchProductToDelete) {
-        return res.status(404).json({ error: "Product not found" });
-      }
-       
-       // deleting the image from cloudinary as well
-       for(const url of fetchProductToDelete.productImage){
-        try {
-         await deleteFromCloudinary(url);
-        } catch (cloudinaryError) {
-          console.error(`Failed to delete image from Cloudinary: ${url}`, cloudinaryError);
-        }
-       }
+async function handleDeleteProduct(req, res) {
+  try {
+    const { id } = req.params;
+    const fetchProductToDelete = await productModel.findById(id);
+    if (!fetchProductToDelete) {
+      return res.status(404).json({ error: "Product not found" });
+    }
 
-       await productModel.findByIdAndDelete(id);
-      return res.json({message : `product is deleted successfully ${id}`})
-   } catch (error) {
+    // deleting the image from cloudinary as well
+    for (const url of fetchProductToDelete.productImage) {
+      try {
+        await deleteFromCloudinary(url);
+      } catch (cloudinaryError) {
+        console.error(
+          `Failed to delete image from Cloudinary: ${url}`,
+          cloudinaryError
+        );
+      }
+    }
+
+    await productModel.findByIdAndDelete(id);
+    return res.json({ message: `product is deleted successfully ${id}` });
+  } catch (error) {
     console.log("Error in delete product controller", error);
     return res.status(500).json({ error: error.message });
-   }
+  }
 }
 
-async function handleGetAllProduct(req,res) {
+async function handleGetAllProduct(req, res) {
   try {
     const allProduct = await productModel.find({});
     if (!allProduct) {
       return res.status(404).json({ error: "Product not found" });
     }
-    return res.json({productDetails : allProduct})
- } catch (error) {
-  console.log("Error in get all product controller", error);
-  return res.status(500).json({ error: error.message });
- }
+    return res.json({ productDetails: allProduct });
+  } catch (error) {
+    console.log("Error in get all product controller", error);
+    return res.status(500).json({ error: error.message });
+  }
 }
 
-module.exports = { handleCreateProduct, handleUpdateProduct , handleDeleteProduct , handleGetAllProduct };
+module.exports = {
+  handleCreateProduct,
+  handleUpdateProduct,
+  handleDeleteProduct,
+  handleGetAllProduct,
+};
