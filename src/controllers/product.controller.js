@@ -1,4 +1,4 @@
-const { uploadToCloudinary } = require("../middleware/cloudinary.middleware");
+const { uploadToCloudinary, deleteFromCloudinary } = require("../middleware/cloudinary.middleware");
 const { productModel } = require("../models/product.model");
 
 async function handleCreateProduct(req, res) {
@@ -111,10 +111,21 @@ async function handleUpdateProduct(req, res) {
 async function handleDeleteProduct(req,res) {
    try {
       const {id} = req.params;
-      const deletedProduct = await productModel.findByIdAndDelete(id);
-      if (!deletedProduct) {
+       const fetchProductToDelete = await productModel.findById(id);
+       if (!fetchProductToDelete) {
         return res.status(404).json({ error: "Product not found" });
       }
+       
+       // deleting the image from cloudinary as well
+       for(const url of fetchProductToDelete.productImage){
+        try {
+         await deleteFromCloudinary(url);
+        } catch (cloudinaryError) {
+          console.error(`Failed to delete image from Cloudinary: ${url}`, cloudinaryError);
+        }
+       }
+
+       await productModel.findByIdAndDelete(id);
       return res.json({message : `product is deleted successfully ${id}`})
    } catch (error) {
     console.log("Error in delete product controller", error);

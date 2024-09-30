@@ -34,4 +34,25 @@ async function uploadToCloudinary(localPath, options = {}) {
     }
 }
 
-module.exports = { uploadToCloudinary };
+
+async function deleteFromCloudinary(url) {
+    try {
+        // Extract the part of the URL after 'upload/' but without the version or file extension
+        const urlSegments = url.split('/');
+        // console.log(urlSegments)
+        const versionIndex = urlSegments.findIndex(segment => segment.startsWith('v'));
+        // console.log(versionIndex)
+        
+        // Get the public ID with folder path, excluding the version and file extension
+        const publicIdWithFolder = urlSegments.slice(versionIndex + 1).join('/').split('.')[0];
+        // console.log(publicIdWithFolder)
+
+
+        const result = await cloudinary.uploader.destroy(publicIdWithFolder);
+        return result;
+    } catch (error) {
+        console.error(`Error deleting file from Cloudinary: ${error.message}`);
+        return null;
+    }
+}
+module.exports = { uploadToCloudinary  , deleteFromCloudinary};
