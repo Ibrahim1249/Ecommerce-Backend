@@ -24,7 +24,7 @@ async function uploadToCloudinary(localPath, options = {}) {
         
         // console.log(`File uploaded successfully. URL: ${response.secure_url}`);
         await fs.unlink(localPath);
-        return response.secure_url;
+        return {secureURL : response.secure_url , publicURL : response.public_id};
     } catch (error) {
         console.error(`Error uploading file to Cloudinary: ${error.message}`);
         await fs.unlink(localPath).catch(unlinkError => 
@@ -36,19 +36,14 @@ async function uploadToCloudinary(localPath, options = {}) {
 
 
 async function deleteFromCloudinary(url) {
+
     try {
-        // Extract the part of the URL after 'upload/' but without the version or file extension
-        const urlSegments = url.split('/');
-        // console.log(urlSegments)
-        const versionIndex = urlSegments.findIndex(segment => segment.startsWith('v'));
-        // console.log(versionIndex)
-        
-        // Get the public ID with folder path, excluding the version and file extension
-        const publicIdWithFolder = urlSegments.slice(versionIndex + 1).join('/').split('.')[0];
-        // console.log(publicIdWithFolder)
 
-
-        const result = await cloudinary.uploader.destroy(publicIdWithFolder);
+        // const urlSegments = url.split('/');
+        // const versionIndex = urlSegments.findIndex(segment => segment.startsWith('v'));
+        // const publicIdWithFolder = urlSegments.slice(versionIndex + 1).join('/').split('.')[0];
+  
+        const result = await cloudinary.uploader.destroy(url.publicURL);
         return result;
     } catch (error) {
         console.error(`Error deleting file from Cloudinary: ${error.message}`);

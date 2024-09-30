@@ -32,7 +32,7 @@ async function handleCreateProduct(req, res) {
     );
 
     // filter out any failed upload to cloudinary
-    const validProductURLs = productURLS.filter((url) => url !== null);
+    const validProductURLs = productURLS.filter((url) => url.secureURL !== null);
     if (validProductURLs.length === 0)
       return res
         .status(500)
@@ -92,7 +92,7 @@ async function handleUpdateProduct(req, res) {
       );
 
       // filter out any failed upload to Cloudinary
-      const validUpdatedProductURLs = result.filter((url) => url !== null);
+      const validUpdatedProductURLs = result.filter((url) => url.secureURL !== null);
       if (validUpdatedProductURLs.length === 0) {
         return res
           .status(500)
