@@ -152,6 +152,19 @@ async function handleDeleteProduct(req, res) {
       }
     }
 
+    // delete image of review from cloudinary
+    for(const review of fetchProductToDelete.reviews){
+       if(review.media.length > 0){
+           for(const url of review.media){
+             try {
+                await deleteFromCloudinary(url)
+             } catch (error) {
+              console.log(`Failed to delete image from Cloudinary: ${url}` , error)
+             }
+           }
+       }
+    }
+
     await productModel.findByIdAndDelete(id);
     return res.json({ message: `product is deleted successfully ${id}` });
   } catch (error) {
@@ -179,6 +192,7 @@ async function handleProductReview(req, res) {
     let { id } = req.params;
     const userId = req.user._id;
     let validProductURLs = [];
+
     id = new mongoose.Types.ObjectId(id);
 
     if (req.files && req.files.length > 0) {
@@ -210,16 +224,19 @@ async function handleProductReview(req, res) {
 
     let updatedProduct;
 
-    if (existingReviewIndex !== -1 ) {
-        // Update existing review
-        product.reviews[existingReviewIndex].reviewMessage = reviewMessage || product.reviews[existingReviewIndex].reviewMessage;
-        product.reviews[existingReviewIndex].rating = rating || product.reviews[existingReviewIndex].rating;
+    if (existingReviewIndex !== -1) {
+      // Update existing review
+      product.reviews[existingReviewIndex].reviewMessage =
+        reviewMessage || product.reviews[existingReviewIndex].reviewMessage;
+      product.reviews[existingReviewIndex].rating =
+        rating || product.reviews[existingReviewIndex].rating;
 
-        if(validProductURLs.length > 0){
-          product.reviews[existingReviewIndex].media = validProductURLs || product.reviews[existingReviewIndex].media
-        }
+      if (validProductURLs.length > 0) {
+        product.reviews[existingReviewIndex].media =
+          validProductURLs || product.reviews[existingReviewIndex].media;
+      }
 
-        updatedProduct = await product.save()
+      updatedProduct = await product.save();
     } else {
       // add new review
       const reviewObj = {
@@ -235,27 +252,103 @@ async function handleProductReview(req, res) {
       // product.reviews.push(reviewObj);
       // updatedProduct = await product.save();
 
-      
       updatedProduct = await productModel.findByIdAndUpdate(
         id,
         { $push: { reviews: reviewObj } },
         { new: true, runValidators: true }
       );
     }
-    
-       // Recalculate average rating
-       const averageRating = updatedProduct.reviews.reduce((acc, review) => acc + review.rating, 0) / updatedProduct.reviews.length;
-       updatedProduct.averageRating = Number(averageRating.toFixed(1));
-       await updatedProduct.save();
 
-       res.status(201).json({ 
-         message: existingReviewIndex !== -1 ? "Review updated successfully" : "Review added successfully",
-         review: updatedProduct.reviews[existingReviewIndex !== -1 ? existingReviewIndex : updatedProduct.reviews.length - 1],
-         averageRating: updatedProduct.averageRating
-       });
+    // Recalculate average rating
+    const averageRating =
+      updatedProduct.reviews.reduce((acc, review) => acc + review.rating, 0) /
+      updatedProduct.reviews.length;
+    updatedProduct.averageRating = Number(averageRating.toFixed(1));
+    await updatedProduct.save();
+
+    res.status(201).json({
+      message:
+        existingReviewIndex !== -1
+          ? "Review updated successfully"
+          : "Review added successfully",
+      review:
+        updatedProduct.reviews[
+          existingReviewIndex !== -1
+            ? existingReviewIndex
+            : updatedProduct.reviews.length - 1
+        ],
+      averageRating: updatedProduct.averageRating,
+    });
   } catch (error) {
     console.error("Error in review controller:", error);
-    res.status(500).json({ error: "An error occurred while processing the review" });
+    res
+      .status(500)
+      .json({ error: "An error occurred while processing the review" });
+  }
+}
+
+async function handleDeleteProductReview(req, res) {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+    const product = await productModel.findById(id);
+    if (!product)
+      return res.status(404).json({ error: "Product is not found " });
+
+    const userReviewIndex = product.reviews.findIndex(
+      (review) => review.user.toString() === userId.toString()
+    );
+
+    if(userReviewIndex === -1){
+       return res.status(404).json({error : "user review is not found"})
+    }
+        
+       // i need to remove the media from cloudinary of that user if user have uploaded any media in review before deleting from database
+        for(const url of product.reviews[userReviewIndex].media){
+           try {
+             await deleteFromCloudinary(url);
+           } catch (error) {
+             console.log(`Failed to delete image from Cloudinary: ${url}` , error)
+           }
+        }
+        
+     product.reviews = [...product.reviews.slice(0,userReviewIndex) , ...product.reviews.slice(userReviewIndex+1)]
+    // Recalculate average rating
+  
+     if(product.reviews.length > 0){
+       const averageRating = product.reviews.reduce((acc, review) => acc + review.rating, 0) / product.reviews.length;
+       product.averageRating = Number(averageRating.toFixed(1));
+     }else{
+      product.averageRating = 0
+     }
+
+    await product.save();
+
+
+    return res
+      .status(200)
+      .json({
+        message: "You review is deleted successfully ",
+        singleProduct: product,
+      });
+  } catch (error) {
+    console.log("error from delete review controller ", error.message);
+    res.status(500).json({ error: error.message });
+  }
+}
+async function handleGetSingleProduct(req, res) {
+  try {
+    const { id } = req.params;
+    const product = await productModel.findById(id);
+    if (!product)
+      return res.status(404).json({ error: "Product is not found " });
+
+    res
+      .status(200)
+      .json({ message: "product found successfully ", singleProduct: product });
+  } catch (error) {
+    console.log("error from single product controller ", error.message);
+    res.status(500).json({ error: error.message });
   }
 }
 
@@ -265,4 +358,6 @@ module.exports = {
   handleDeleteProduct,
   handleGetAllProduct,
   handleProductReview,
+  handleGetSingleProduct,
+  handleDeleteProductReview,
 };
