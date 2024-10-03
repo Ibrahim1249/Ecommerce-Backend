@@ -13,7 +13,7 @@ const reviewSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
-    productImage: {
+    media: {
         type: []
     }
 });
@@ -49,9 +49,14 @@ const productSchema = new mongoose.Schema({
     productImage: {
         type: []
     },
-    review: {
-        type: [reviewSchema]
-    }
+    reviews: {
+        type: [reviewSchema],
+        default : []
+    },
+    averageRating : {
+         type : Number,
+         default : 0
+    } 
 });
 
 const productModel = mongoose.model("product", productSchema);

@@ -3,14 +3,25 @@ const {
   deleteFromCloudinary,
 } = require("../middleware/cloudinary.middleware");
 const { productModel } = require("../models/product.model");
+const mongoose = require("mongoose");
 
 async function handleCreateProduct(req, res) {
   try {
-    const { productName, price, brand, category, stock, description } =
-      req.body;
+    const {
+      productName,
+      price,
+      brand,
+      category,
+      stock,
+      description,
+      averageRating,
+      review,
+    } = req.body;
+
     if (
-      [productName, price, brand, category, stock].some(
-        (filed) => filed?.trim() === ""
+      [productName, brand, category].some((field) => field?.trim() === "") ||
+      [price, stock].some(
+        (field) => field === undefined || field === null || field === ""
       )
     )
       return res.status(409).json({ error: "All field is required" });
@@ -32,7 +43,9 @@ async function handleCreateProduct(req, res) {
     );
 
     // filter out any failed upload to cloudinary
-    const validProductURLs = productURLS.filter((url) => url.secureURL !== null);
+    const validProductURLs = productURLS.filter(
+      (url) => url.secureURL !== null
+    );
     if (validProductURLs.length === 0)
       return res
         .status(500)
@@ -47,6 +60,8 @@ async function handleCreateProduct(req, res) {
       stock: parseInt(stock),
       productImage: validProductURLs,
       description: description || "",
+      review: [],
+      averageRating,
     };
 
     const createdProduct = await productModel.create(newProduct);
@@ -92,7 +107,9 @@ async function handleUpdateProduct(req, res) {
       );
 
       // filter out any failed upload to Cloudinary
-      const validUpdatedProductURLs = result.filter((url) => url.secureURL !== null);
+      const validUpdatedProductURLs = result.filter(
+        (url) => url.secureURL !== null
+      );
       if (validUpdatedProductURLs.length === 0) {
         return res
           .status(500)
@@ -156,9 +173,96 @@ async function handleGetAllProduct(req, res) {
   }
 }
 
+async function handleProductReview(req, res) {
+  try {
+    const { rating, reviewMessage } = req.body;
+    let { id } = req.params;
+    const userId = req.user._id;
+    let validProductURLs = [];
+    id = new mongoose.Types.ObjectId(id);
+
+    if (req.files && req.files.length > 0) {
+      // Upload all images to Cloudinary
+      const productURLS = await Promise.all(
+        req.files.map(async (file) => {
+          const productURL = await uploadToCloudinary(file.path);
+          // console.log("Uploaded image URL:", productURL);
+          return productURL;
+        })
+      );
+
+      // filter out any failed upload to cloudinary
+      validProductURLs = productURLS.filter((url) => url.secureURL !== null);
+      if (validProductURLs.length === 0)
+        return res
+          .status(500)
+          .json({ error: "Failed to upload all product images" });
+    }
+    const product = await productModel.findById(id);
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    // Check if the user has already rated the product
+    const existingReviewIndex = product.reviews.findIndex(
+      (review) => review.user.toString() === userId.toString()
+    );
+
+    let updatedProduct;
+
+    if (existingReviewIndex !== -1 ) {
+        // Update existing review
+        product.reviews[existingReviewIndex].reviewMessage = reviewMessage || product.reviews[existingReviewIndex].reviewMessage;
+        product.reviews[existingReviewIndex].rating = rating || product.reviews[existingReviewIndex].rating;
+
+        if(validProductURLs.length > 0){
+          product.reviews[existingReviewIndex].media = validProductURLs || product.reviews[existingReviewIndex].media
+        }
+
+        updatedProduct = await product.save()
+    } else {
+      // add new review
+      const reviewObj = {
+        user: userId,
+        reviewMessage,
+        rating: Number(rating),
+        media: validProductURLs,
+      };
+
+      // Add review and update average rating
+
+      /* one way to do this you save db call  */
+      // product.reviews.push(reviewObj);
+      // updatedProduct = await product.save();
+
+      
+      updatedProduct = await productModel.findByIdAndUpdate(
+        id,
+        { $push: { reviews: reviewObj } },
+        { new: true, runValidators: true }
+      );
+    }
+    
+       // Recalculate average rating
+       const averageRating = updatedProduct.reviews.reduce((acc, review) => acc + review.rating, 0) / updatedProduct.reviews.length;
+       updatedProduct.averageRating = Number(averageRating.toFixed(1));
+       await updatedProduct.save();
+
+       res.status(201).json({ 
+         message: existingReviewIndex !== -1 ? "Review updated successfully" : "Review added successfully",
+         review: updatedProduct.reviews[existingReviewIndex !== -1 ? existingReviewIndex : updatedProduct.reviews.length - 1],
+         averageRating: updatedProduct.averageRating
+       });
+  } catch (error) {
+    console.error("Error in review controller:", error);
+    res.status(500).json({ error: "An error occurred while processing the review" });
+  }
+}
+
 module.exports = {
   handleCreateProduct,
   handleUpdateProduct,
   handleDeleteProduct,
   handleGetAllProduct,
+  handleProductReview,
 };
