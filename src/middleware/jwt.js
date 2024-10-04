@@ -10,7 +10,7 @@ async function verifyJwt(req,res,next){
        if(!token) return res.status(401).json({error : "Unauthorized request"});
 
        const decoded = jwt.verify(token , process.env.ACCESS_TOKEN_SECRET);
-
+ 
        const user = await userModel.findById(decoded?._id).select("-password -refreshToken");
 
        if(!user) return res.status(401).json({error : "Invalid Access Token"});

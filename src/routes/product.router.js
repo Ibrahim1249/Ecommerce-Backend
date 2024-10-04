@@ -14,7 +14,7 @@ productRouter.put("/create-product/:id",verifyJwt , verifyUserRole ,upload.array
 productRouter.delete("/create-product/:id",verifyJwt , verifyUserRole , handleDeleteProduct)
 productRouter.get("/",verifyJwt , handleGetAllProduct)
 productRouter.get("/:id",verifyJwt , handleGetSingleProduct)
-productRouter.post("/:id/review",verifyJwt,upload.array('media', 5),handleProductReview)
+productRouter.post("/:id",verifyJwt,upload.array('media', 5),handleProductReview)
 productRouter.delete("/:id",verifyJwt,handleDeleteProductReview)
 
 module.exports = { productRouter }

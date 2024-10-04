@@ -292,12 +292,9 @@ async function handleDeleteProductReview(req, res) {
     const { id } = req.params;
     const userId = req.user._id;
     const product = await productModel.findById(id);
-    if (!product)
-      return res.status(404).json({ error: "Product is not found " });
+    if (!product) return res.status(404).json({ error: "Product is not found " });
 
-    const userReviewIndex = product.reviews.findIndex(
-      (review) => review.user.toString() === userId.toString()
-    );
+    const userReviewIndex = product.reviews.findIndex((review) => review.user.toString() === userId.toString());
 
     if(userReviewIndex === -1){
        return res.status(404).json({error : "user review is not found"})
@@ -313,8 +310,8 @@ async function handleDeleteProductReview(req, res) {
         }
         
      product.reviews = [...product.reviews.slice(0,userReviewIndex) , ...product.reviews.slice(userReviewIndex+1)]
+
     // Recalculate average rating
-  
      if(product.reviews.length > 0){
        const averageRating = product.reviews.reduce((acc, review) => acc + review.rating, 0) / product.reviews.length;
        product.averageRating = Number(averageRating.toFixed(1));
@@ -323,8 +320,6 @@ async function handleDeleteProductReview(req, res) {
      }
 
     await product.save();
-
-
     return res
       .status(200)
       .json({
