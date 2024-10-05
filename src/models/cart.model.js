@@ -34,6 +34,7 @@ const cartSchema = new mongoose.Schema({
 cartSchema.pre("save" , function(next){
     this.totalAmount = this.items.reduce((accumulator , current)=> accumulator + (current.price * current.quantity),0)
     // here we can a line for discount price if user have applied some coupon code then this would be turn out to this.totalAmount = this.totalAmount - this.discount
+    this.totalAmount = this.totalAmount.toFixed(2)
     next()
 })
 

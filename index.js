@@ -4,6 +4,7 @@ const { userRouter } = require("./src/routes/user.router");
 const dotenv = require("dotenv");
 const cookieParser = require("cookie-parser");
 const { productRouter } = require("./src/routes/product.router");
+const { cartRouter } = require("./src/routes/cart.router");
 dotenv.config();
 
 const app = express();
@@ -23,3 +24,4 @@ mongodbConnect().then(()=>{
 
 app.use("/api/v1/user",userRouter);
 app.use("/api/v1/product",productRouter);
+app.use("/api/v1/product/cart",cartRouter)
