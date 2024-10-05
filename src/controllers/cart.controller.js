@@ -12,6 +12,7 @@ async function handleUserCart(req, res) {
       quantity,
       price,
     };
+    
     // find if the user cart or create the cart if not exist
     const userCart = await cartModel.findOne({ user: userId });
 
@@ -21,7 +22,12 @@ async function handleUserCart(req, res) {
         items: [itemOject],
       });
     } else {
-      userCart.items.push(itemOject);
+       const existingProductIndex = userCart.items.findIndex((product)=> product.productID.toString() === id.toString())
+       if(existingProductIndex === -1){
+        userCart.items.push(itemOject);
+       }else{
+          return res.status(400).json({message : "product is already add in cart"})
+       }
     }
 
     const updatedCart = await userCart.save();
@@ -112,4 +118,20 @@ async function handleUpdateCartItemQuantity(req, res) {
   }
 }
 
-module.exports = { handleUserCart, handleUpdateCartItemQuantity };
+async function handleGetUserCart(req,res) {
+    try {
+        const userId = req.user._id;
+        console.log(userId)
+        // const userCart = await cartModel.findOne({user : userId})
+        // console.log(userCart)
+        // return null
+    } catch (error) {
+        console.log("Error getting cart:", error);
+        res
+          .status(500)
+          .json({ message: "Error get user cart", error: error.message });
+    }
+}
+
+
+module.exports = { handleUserCart, handleUpdateCartItemQuantity , handleGetUserCart };
