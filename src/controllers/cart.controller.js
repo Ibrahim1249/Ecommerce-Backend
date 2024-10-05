@@ -142,5 +142,36 @@ async function handleGetUserCart(req,res) {
     }
 }
 
+async function handleDeleteProductFromCart(req,res) {
+   try {
+       const {productID} = req.body;
+       const userId = req.user._id
+  
 
-module.exports = { handleUserCart, handleUpdateCartItemQuantity , handleGetUserCart };
+       const userCart = await cartModel.findOne({user:userId});
+       if (!userCart) {
+        return res.status(404).json({ message: "Cart not found for this user" });
+    }
+
+    const productToDeleteIndex = userCart.items.findIndex((product)=> product.productID.toString() === productID.toString());
+
+
+    if(productToDeleteIndex === -1) {
+      return res.status(400).json({ message: "Product is not found in user cart" });
+    }
+    userCart.items = [...userCart.items.slice(0,productToDeleteIndex),...userCart.items.slice(productToDeleteIndex+1)];
+
+    await userCart.save();
+
+    return res.status(200).json({message : "product is remove from cart!" , cart : userCart})
+
+   } catch (error) {
+    console.log("Error getting cart:", error);
+    res
+      .status(500)
+      .json({ message: "Error get user cart", error: error.message });
+   }
+}
+
+
+module.exports = { handleUserCart, handleUpdateCartItemQuantity , handleGetUserCart , handleDeleteProductFromCart };
