@@ -88,7 +88,7 @@ async function handleUpdateCartItemQuantity(req, res) {
       .populate({
         path: "items.productID",
         model: "product",
-        select: "name price",
+        select: "productName price",
       });
 
      
@@ -121,10 +121,19 @@ async function handleUpdateCartItemQuantity(req, res) {
 async function handleGetUserCart(req,res) {
     try {
         const userId = req.user._id;
-        console.log(userId)
-        // const userCart = await cartModel.findOne({user : userId})
-        // console.log(userCart)
-        // return null
+       
+        const userCart = await cartModel.findOne({ user: userId })
+        .populate({
+            path: 'items.productID',
+            model: 'product', 
+            select: 'productName price productImage' 
+        });
+
+    if (!userCart) {
+        return res.status(404).json({ message: "Cart not found for this user" });
+    }
+
+        return res.status(200).json({ cart: userCart });
     } catch (error) {
         console.log("Error getting cart:", error);
         res

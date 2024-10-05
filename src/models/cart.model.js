@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const cartItemSchema = new mongoose.Schema({
      productID : {
         type : mongoose.Schema.Types.ObjectId,
-        ref : "ref"
+        ref : "product"
      },
      quantity: {
         type: Number,
@@ -38,6 +38,6 @@ cartSchema.pre("save" , function(next){
     next()
 })
 
-const cartModel = new mongoose.model("cart",cartSchema);
+const cartModel = mongoose.model("cart",cartSchema);
 
 module.exports = { cartModel };

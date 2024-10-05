@@ -8,7 +8,7 @@ const cartRouter = express.Router();
 
 cartRouter.post("/:id" , verifyJwt, handleUserCart);
 cartRouter.patch("/:productID" , verifyJwt, handleUpdateCartItemQuantity);
-cartRouter.get("/" , verifyJwt, handleGetUserCart);
+cartRouter.get("/" , verifyJwt , handleGetUserCart);
 
 
 module.exports = {cartRouter}
