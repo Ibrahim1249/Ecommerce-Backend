@@ -1,3 +1,4 @@
+const { uploadToCloudinary } = require("../middleware/cloudinary.middleware");
 const { userModel } = require("../models/user.model")
 const jwt = require("jsonwebtoken");
 
@@ -26,14 +27,24 @@ async function handleRegisterUser(req,res) {
          return res.status(400).json({error : "All Field is Required!"})
      }
 
+
      // existing user check
      const existingUser = await userModel.findOne({email : email});
      if(existingUser){
         return res.status(409).json({error : "Email is already exist!"})
      }
+    
+     let url;
+     if(req.file){
+         try {
+             url = await uploadToCloudinary(req.file.path)
+         } catch (error) {
+            console.log("error in uploading avatar image")
+         }
+     }
      // put user in db
 
-     const user = await userModel.create({firstName , lastName , email , password , role})
+     const user = await userModel.create({firstName , lastName , email , password , role , avatar : url.secureURL})
 
      const createUser = await userModel.findById(user?._id).select("-password -refreshToken")
      if(!createUser) return res.status(500).json({error : "Something went wrong while registering the user " })
@@ -117,13 +128,26 @@ async function changePassword(req,res) {
 
 async function handleAddWishlist(req,res) {
     try {
-        const {productId} = req.body;
-        const updatedWishlist = await userModel.findByIdAndUpdate(req.user._id , {
-             $push :{
-                 wishlist : productId
-             }
-        },{new : true})
+        const {productId} = req.params;
+        const userId = req.user._id;
+        const user = await userModel.findById(userId);
 
+        const existingProductInWishList = user.wishlist.find((id)=> id.toString() === productId.toString());
+      
+        let updatedWishlist;
+        if(!existingProductInWishList){
+           updatedWishlist = await userModel.findByIdAndUpdate(
+              userId,
+              {$push : {wishlist : productId}},
+              {new : true}
+           )
+        }else{
+            updatedWishlist = await userModel.findByIdAndUpdate(
+                userId,
+                {$pull : {wishlist : productId}},
+                {new : true}
+             )
+        }
         // console.log(updatedWishlist)
         return res.json({message : "product add in wishlist" , updatedWishlist })
 
@@ -134,10 +158,10 @@ async function handleAddWishlist(req,res) {
 }
 async function handleGetWishlist(req,res) {
     try {
-        const updatedWishlist = await userModel.findById(req.user._id).populate("wishlist" , "title price description brand");
-        if(!updatedWishlist)return res.status(404).json({message : `No Wishlist for user ${req.user._id}`})
+        const wishlist = await userModel.findById(req.user._id).populate("wishlist" , "title price description brand productImage");
+        if(!wishlist)return res.status(404).json({message : `No Wishlist for user ${req.user._id}`})
 
-        return res.json({message : `Wishlist for user ${req.user._id}` , updatedWishlist })
+        return res.json({message : `Wishlist for user ${req.user._id}` , wishlist })
 
     } catch (error) {
         console.log("error in get wishlist controller " , error);

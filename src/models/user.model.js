@@ -48,6 +48,9 @@ const userSchema = new mongoose.Schema(
     refreshToken: {
       type: String
     },
+    avatar : {
+      type: String
+    },
     wishlist: [
       {
         type: mongoose.Schema.Types.ObjectId,
